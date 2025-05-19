@@ -45,14 +45,14 @@ struct ContentView: View {
             List {
                 Section("Personal") {
                     ForEach(expenses.items.filter{$0.type == "Personal"}) { item in
-                        ExtractedView(item: item)
+                        ExpencesItemView(item: item)
                     }
                     .onDelete{ offsets in removeItems(typeOf: "Personal", at: offsets) }
                 }
                 
                 Section("Business") {
                     ForEach(expenses.items.filter{$0.type == "Business"}) { item in
-                        ExtractedView(item: item)
+                        ExpencesItemView(item: item)
                     }
                     .onDelete{ offsets in removeItems(typeOf: "Business", at: offsets) }
                 }
@@ -82,7 +82,7 @@ struct ContentView: View {
     ContentView()
 }
 
-struct ExtractedView: View {
+struct ExpencesItemView: View {
     var item: ExpenseItem
     
     var body: some View {
