@@ -43,22 +43,19 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(expenses.items) { item in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(item.name)
-                                .font(.title2.bold())
-                            
-                            Text(item.type)
-                                .foregroundStyle(Color("TextAccentColor"))
-                        }
-                        Spacer()
-                        
-                        Text(item.amount, format: .currency(code: Locale.current.currency?.identifier ?? "USD"))
-                            .foregroundStyle(Color(item.amount >= 100 ? "HighNumberCurrency" : item.amount >= 10 ? "MiddleNumberCurrency" : "SmallNumberCurrency"))
+                Section("Personal") {
+                    ForEach(expenses.items.filter{$0.type == "Personal"}) { item in
+                        ExtractedView(item: item)
                     }
+                    .onDelete{ offsets in removeItems(typeOf: "Personal", at: offsets) }
                 }
-                .onDelete(perform: removeItems)
+                
+                Section("Business") {
+                    ForEach(expenses.items.filter{$0.type == "Business"}) { item in
+                        ExtractedView(item: item)
+                    }
+                    .onDelete{ offsets in removeItems(typeOf: "Business", at: offsets) }
+                }
             }
             .navigationTitle("iExpense")
             .toolbar {
@@ -72,11 +69,35 @@ struct ContentView: View {
         }
     }
     
-    func removeItems(at offsets: IndexSet) {
-        expenses.items.remove(atOffsets: offsets)
+    func removeItems(typeOf type: String, at offsets: IndexSet) {
+        let allOfType = expenses.items.enumerated()
+            .filter { $0.element.type == type }
+        
+        let indicesToDelete = offsets.map { allOfType[$0].offset }
+        expenses.items.remove(atOffsets: IndexSet(indicesToDelete))
     }
 }
 
 #Preview {
     ContentView()
+}
+
+struct ExtractedView: View {
+    var item: ExpenseItem
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(item.name)
+                    .font(.title2.bold())
+                
+                Text(item.type)
+                    .foregroundStyle(Color("TextAccentColor"))
+            }
+            Spacer()
+            
+            Text(item.amount, format: .currency(code: Locale.current.currency?.identifier ?? "USD"))
+                .foregroundStyle(Color(item.amount >= 100 ? "HighNumberCurrency" : item.amount >= 10 ? "MiddleNumberCurrency" : "SmallNumberCurrency"))
+        }
+    }
 }
