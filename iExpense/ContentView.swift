@@ -50,10 +50,12 @@ struct ContentView: View {
                                 .font(.title2.bold())
                             
                             Text(item.type)
+                                .foregroundStyle(Color("TextAccentColor"))
                         }
                         Spacer()
                         
-                        Text(item.amount, format: .currency(code: "USD"))
+                        Text(item.amount, format: .currency(code: Locale.current.currency?.identifier ?? "USD"))
+                            .foregroundStyle(Color(item.amount >= 100 ? "HighNumberCurrency" : item.amount >= 10 ? "MiddleNumberCurrency" : "SmallNumberCurrency"))
                     }
                 }
                 .onDelete(perform: removeItems)
