@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ExpenseItem: Identifiable, Codable {
+struct ExpenseItem: Identifiable, Codable, Hashable {
     var id = UUID()
     let name: String
     let type: String
@@ -38,33 +38,33 @@ class Expenses {
 struct ContentView: View {
     @State private var expenses = Expenses()
     
-    @State private var showingAddExpance: Bool = false
-    
     var body: some View {
         NavigationStack {
             List {
                 Section("Personal") {
                     ForEach(expenses.items.filter{$0.type == "Personal"}) { item in
-                        ExpencesItemView(item: item)
+                        ExpensesItemView(item: item)
                     }
                     .onDelete{ offsets in removeItems(typeOf: "Personal", at: offsets) }
                 }
                 
                 Section("Business") {
                     ForEach(expenses.items.filter{$0.type == "Business"}) { item in
-                        ExpencesItemView(item: item)
+                        ExpensesItemView(item: item)
                     }
                     .onDelete{ offsets in removeItems(typeOf: "Business", at: offsets) }
                 }
             }
             .navigationTitle("iExpense")
             .toolbar {
-                Button("Add Expense", systemImage: "plus") {
-                    showingAddExpance = true
+                NavigationLink(value: "addExpense"){
+                    Label("Add Expense", systemImage: "plus")
                 }
             }
-            .sheet(isPresented: $showingAddExpance) {
-                AddView(expenses: expenses)
+            .navigationDestination(for: String.self) { value in
+                if value == "addExpense" {
+                    AddView(expenses: expenses)
+                }
             }
         }
     }
@@ -82,7 +82,7 @@ struct ContentView: View {
     ContentView()
 }
 
-struct ExpencesItemView: View {
+struct ExpensesItemView: View {
     var item: ExpenseItem
     
     var body: some View {
