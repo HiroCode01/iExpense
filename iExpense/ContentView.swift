@@ -7,6 +7,14 @@
 import SwiftData
 import SwiftUI
 
+enum FilterType: String, CaseIterable, Identifiable {
+    case all = "All"
+    case personal = "Personal"
+    case business = "Business"
+
+    var id: String { rawValue }
+}
+
 enum SortType: String, CaseIterable {
     case name = "Name"
     case amount = "Amount"
@@ -16,28 +24,41 @@ struct ContentView: View {
     @Environment(\.modelContext) var modelContext
     @Query var expenses: [Expense]
     
+    @State private var selectedSortType: SortType = .name
+    @State private var selectedFilter: FilterType = .all
     
     var body: some View {
         NavigationStack {
             List {
-                Section("Personal") {
-                    ForEach(expenses.filter{$0.type == "Personal"}) { item in
-                        ExpensesItemView(item: item)
-                    }
-                    .onDelete { deleteItems(ofType: "Personal", at: $0) }
+                ForEach(filteredAndSortedExpenses) { item in
+                    ExpensesItemView(item: item)
                 }
-                
-                
-                Section("Business") {
-                    ForEach(expenses.filter{$0.type == "Business"}) { item in
-                        ExpensesItemView(item: item)
+                .onDelete { indexSet in
+                    for index in indexSet {
+                        let item = filteredAndSortedExpenses[index]
+                        modelContext.delete(item)
                     }
-                    .onDelete { deleteItems(ofType: "Business", at: $0) }
                 }
             }
             .navigationTitle("iExpense")
             .toolbar {
-                NavigationLink(value: "addExpense"){
+                Menu("Filter", systemImage: "list.bullet.circle") {
+                    Picker("Filter", selection: $selectedFilter) {
+                        ForEach(FilterType.allCases) { filter in
+                            Text(filter.rawValue).tag(filter)
+                        }
+                    }
+                }
+
+                Menu("Sort", systemImage: "arrow.up.arrow.down") {
+                    Picker("Sort", selection: $selectedSortType) {
+                        ForEach(SortType.allCases, id: \.self) { sort in
+                            Text(sort.rawValue).tag(sort)
+                        }
+                    }
+                }
+
+                NavigationLink(value: "addExpense") {
                     Label("Add Expense", systemImage: "plus")
                 }
             }
@@ -58,6 +79,26 @@ struct ContentView: View {
         }
     }
     
+    var filteredAndSortedExpenses: [Expense] {
+        let filtered: [Expense]
+        switch selectedFilter {
+        case .all:
+            filtered = expenses
+        case .personal:
+            filtered = expenses.filter { $0.type.lowercased() == "personal" }
+        case .business:
+            filtered = expenses.filter { $0.type.lowercased() == "business" }
+        }
+
+        return filtered.sorted {
+            switch selectedSortType {
+            case .name:
+                return $0.name < $1.name
+            case .amount:
+                return $1.amount < $0.amount
+            }
+        }
+    }
 }
 
 #Preview {
@@ -74,7 +115,7 @@ struct ExpensesItemView: View {
                     .font(.title2.bold())
                 
                 Text(item.type)
-                    .foregroundStyle(Color("TextAccentColor"))
+                    .foregroundStyle(item.type.lowercased() == "business" ? .red.opacity(0.5) : .mint.opacity(0.5))
             }
             Spacer()
             
