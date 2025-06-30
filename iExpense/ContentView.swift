@@ -4,55 +4,35 @@
 //
 //  Created by HiRO on 16/05/25.
 //
-
+import SwiftData
 import SwiftUI
 
-struct ExpenseItem: Identifiable, Codable, Hashable {
-    var id = UUID()
-    let name: String
-    let type: String
-    let amount: Double
-}
-
-@Observable
-class Expenses {
-    var items = [ExpenseItem]() {
-        didSet {
-            if let encoded = try? JSONEncoder().encode(items) {
-                UserDefaults.standard.set(encoded, forKey: "Items")
-            }
-        }
-    }
-    
-    init() {
-        if let savedItems = UserDefaults.standard.data(forKey: "Items") {
-            if let decodedItems = try? JSONDecoder().decode([ExpenseItem].self, from: savedItems) {
-                items = decodedItems
-                return
-            }
-        }
-        items = []
-    }
+enum SortType: String, CaseIterable {
+    case name = "Name"
+    case amount = "Amount"
 }
 
 struct ContentView: View {
-    @State private var expenses = Expenses()
+    @Environment(\.modelContext) var modelContext
+    @Query var expenses: [Expense]
+    
     
     var body: some View {
         NavigationStack {
             List {
                 Section("Personal") {
-                    ForEach(expenses.items.filter{$0.type == "Personal"}) { item in
+                    ForEach(expenses.filter{$0.type == "Personal"}) { item in
                         ExpensesItemView(item: item)
                     }
-                    .onDelete{ offsets in removeItems(typeOf: "Personal", at: offsets) }
+                    .onDelete { deleteItems(ofType: "Personal", at: $0) }
                 }
                 
+                
                 Section("Business") {
-                    ForEach(expenses.items.filter{$0.type == "Business"}) { item in
+                    ForEach(expenses.filter{$0.type == "Business"}) { item in
                         ExpensesItemView(item: item)
                     }
-                    .onDelete{ offsets in removeItems(typeOf: "Business", at: offsets) }
+                    .onDelete { deleteItems(ofType: "Business", at: $0) }
                 }
             }
             .navigationTitle("iExpense")
@@ -63,19 +43,21 @@ struct ContentView: View {
             }
             .navigationDestination(for: String.self) { value in
                 if value == "addExpense" {
-                    AddView(expenses: expenses)
+                    AddView()
                 }
             }
         }
     }
     
-    func removeItems(typeOf type: String, at offsets: IndexSet) {
-        let allOfType = expenses.items.enumerated()
-            .filter { $0.element.type == type }
-        
-        let indicesToDelete = offsets.map { allOfType[$0].offset }
-        expenses.items.remove(atOffsets: IndexSet(indicesToDelete))
+    
+    func deleteItems(ofType type: String, at indexSet: IndexSet) {
+        let filteredItems = expenses.filter { $0.type == type }
+        for index in indexSet {
+            let item = filteredItems[index]
+            modelContext.delete(item)
+        }
     }
+    
 }
 
 #Preview {
@@ -83,7 +65,7 @@ struct ContentView: View {
 }
 
 struct ExpensesItemView: View {
-    var item: ExpenseItem
+    var item: Expense
     
     var body: some View {
         HStack {
